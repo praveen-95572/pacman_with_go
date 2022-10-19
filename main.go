@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/danicat/simpleansi"
@@ -26,8 +28,10 @@ type Config struct {
 }
 
 type sprite struct {
-	row int
-	col int
+	row      int
+	col      int
+	startRow int
+	startCol int
 }
 
 var (
@@ -36,7 +40,7 @@ var (
 )
 var (
 	score, numDots int
-	lives          = 1
+	lives          = 3
 )
 var cfg Config
 var player sprite
@@ -75,9 +79,9 @@ func loadMaze(file string) error {
 		for col, char := range line {
 			switch char {
 			case 'P':
-				player = sprite{row, col}
+				player = sprite{row, col, row, col}
 			case 'G':
-				ghosts = append(ghosts, &sprite{row, col})
+				ghosts = append(ghosts, &sprite{row, col, row, col})
 			case '.':
 				numDots++
 			}
@@ -123,7 +127,19 @@ func printScreen() {
 
 	//Move cursor outside of maze drawing area
 	moveCursor(len(maze)+1, 0)
-	fmt.Println("Score: ", score, "\tLives:", lives)
+	livesRemaining := strconv.Itoa(lives)
+	if cfg.UseEmoji {
+		livesRemaining = getLivesAsEmoji()
+	}
+	fmt.Println("Score: ", score, "\tLives:", livesRemaining)
+}
+
+func getLivesAsEmoji() string {
+	buf := bytes.Buffer{}
+	for i := lives; i > 0; i-- {
+		buf.WriteString(cfg.Player)
+	}
+	return buf.String()
 }
 
 func readInput() (string, error) {
@@ -293,8 +309,15 @@ func main() {
 
 		//process collisions
 		for _, g := range ghosts {
-			if player == *g {
+			if player.row == g.row && player.col == g.col {
 				lives--
+				if lives != 0 {
+					moveCursor(player.row, player.col)
+					fmt.Print(cfg.Death)
+					moveCursor(len(maze)+2, 0)
+					time.Sleep(1000 * time.Millisecond) // pause before resetting player position
+					player.row, player.col = player.startRow, player.startCol
+				}
 			}
 		}
 		//update screen
@@ -305,6 +328,8 @@ func main() {
 			if lives == 0 {
 				moveCursor(player.row, player.col)
 				fmt.Print(cfg.Death)
+				moveCursor(player.startRow, player.startCol)
+				fmt.Print("GAME OVER")
 				moveCursor(len(maze)+2, 0)
 			}
 			break
