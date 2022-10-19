@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 
@@ -15,8 +16,14 @@ type sprite struct {
 	col int
 }
 
+var (
+	score, numDots int
+	lives          = 1
+)
+
 var player sprite
 var maze []string
+var ghosts []*sprite
 
 func loadMaze(file string) error {
 	f, err := os.Open(file)
@@ -36,6 +43,10 @@ func loadMaze(file string) error {
 			switch char {
 			case 'P':
 				player = sprite{row, col}
+			case 'G':
+				ghosts = append(ghosts, &sprite{row, col})
+			case '.':
+				numDots++
 			}
 		}
 	}
@@ -49,6 +60,8 @@ func printScreen() {
 		for _, chr := range line {
 			switch chr {
 			case '#':
+				fallthrough
+			case '.':
 				fmt.Printf("%c", chr)
 			default:
 				fmt.Print(" ")
@@ -60,8 +73,14 @@ func printScreen() {
 	simpleansi.MoveCursor(player.row, player.col)
 	fmt.Print("P")
 
+	for _, g := range ghosts {
+		simpleansi.MoveCursor(g.row, g.col)
+		fmt.Print("G")
+	}
+
 	//Move cursor outside of maze drawing area
 	simpleansi.MoveCursor(len(maze)+1, 0)
+	fmt.Println("Score: ", score, "\tLives:", lives)
 }
 
 func readInput() (string, error) {
@@ -128,6 +147,31 @@ func makeMove(oldRow, oldCol int, dir string) (newRow, newCol int) {
 
 func movePlayer(dir string) {
 	player.row, player.col = makeMove(player.row, player.col, dir)
+	switch maze[player.row][player.col] {
+	case '.':
+		numDots--
+		score++
+
+		maze[player.row] = maze[player.row][0:player.col] + " " + maze[player.row][player.col+1:]
+	}
+}
+
+func drawDirection() string {
+	dir := rand.Intn(4)
+	move := map[int]string{
+		0: "UP",
+		1: "DOWN",
+		2: "RIGHT",
+		3: "LEFT",
+	}
+	return move[dir]
+}
+
+func moveGhosts() {
+	for _, g := range ghosts {
+		dir := drawDirection()
+		g.row, g.col = makeMove(g.row, g.col, dir)
+	}
 }
 
 func initialise() {
@@ -176,10 +220,17 @@ func main() {
 
 		//process movement
 		movePlayer(input)
+		moveGhosts()
+
 		//process collisions
+		for _, g := range ghosts {
+			if player == *g {
+				lives--
+			}
+		}
 
 		//check game over
-		if input == "ESC" {
+		if input == "ESC" || numDots == 0 || lives < 0 {
 			break
 		}
 
