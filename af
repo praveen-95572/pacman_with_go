@@ -1,0 +1,11 @@
+[33mcommit 1f81c045cd62914643550b8c5e14c1715b14cb74[m[33m ([m[1;36mHEAD -> [m[1;32mstep03[m[33m, [m[1;31murl/step02[m[33m, [m[1;32mstep02[m[33m)[m
+Author: praveen-95572 <praveen.95572@gmail.com>
+Date:   Wed Oct 19 13:52:36 2022 +0530
+
+    initialise cleanup ESC cmd
+
+[33mcommit 1b4939c6ccb83eefc8d5cc8d62cd9dd108af978e[m[33m ([m[1;31murl/step01[m[33m, [m[1;32mstep01[m[33m)[m
+Author: praveen-95572 <praveen.95572@gmail.com>
+Date:   Wed Oct 19 13:08:04 2022 +0530
+
+    step1
